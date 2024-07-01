@@ -1,4 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { CreateUserDTO } from './dto/create-user.dto';
+import { UpdateUserDTO } from './dto/update-user.dto';
 
 @Injectable()
 export class UsersService {
@@ -37,43 +39,36 @@ export class UsersService {
 
   findAll(role?: 'INTERN' | 'ENGINEER' | 'ADMIN') {
     if (role) {
-      return this.users.filter((user) => user.role === role);
+      const rolesArray = this.users.filter((user) => user.role === role);
+      if (rolesArray.length === 0)
+        throw new NotFoundException(`Role ${role} not found`);
+      return rolesArray;
     }
     return this.users;
   }
 
   findOne(id: number) {
     const user = this.users.find((user) => user.id === id);
+    if (!user) throw new NotFoundException(`User with id ${id} not found`);
     return user;
   }
 
-  create(user: {
-    name: string;
-    email: string;
-    role: 'INTERN' | 'ENGINEER' | 'ADMIN';
-  }) {
+  create(createUserDTO: CreateUserDTO) {
     const userByHighestId = [...this.users].sort((a, b) => a.id - b.id);
     const newUser = {
       id: userByHighestId[0].id + 1,
-      ...user,
+      ...createUserDTO,
     };
     this.users.push(newUser);
     return newUser;
   }
 
-  update(
-    id: number,
-    updateUser: {
-      name?: string;
-      email?: string;
-      role?: 'INTERN' | 'ENGINEER' | 'ADMIN';
-    },
-  ) {
+  update(id: number, updateUserDTO: UpdateUserDTO) {
     this.users = this.users.map((user) => {
       if (user.id === id) {
         return {
           ...user,
-          ...updateUser,
+          ...updateUserDTO,
         };
       }
       return user;
